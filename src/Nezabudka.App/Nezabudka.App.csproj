@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>Nezabudka.App</RootNamespace>
+    <AssemblyName>Nezabudka</AssemblyName>
+    <AssemblyTitle>Незабудка</AssemblyTitle>
+    <Product>Незабудка</Product>
+    <Authors>KlaOs</Authors>
+    <Company>KlaOs</Company>
+    <Version>0.1.0-alpha</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>alpha 0.1</InformationalVersion>
+    <ApplicationIcon>Assets\nezabudka.ico</ApplicationIcon>
+    <Description>Локальный блокнот с задачами и напоминаниями.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\anime-lineart.png" />
+    <Resource Include="Assets\nezabudka.ico" />
+    <Resource Include="Assets\Fonts\*.ttf" />
+    <Resource Include="Assets\Fonts\*.otf" />
+    <None Update="Assets\Fonts\OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Update="Assets\Fonts\NotoSansSC-LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>

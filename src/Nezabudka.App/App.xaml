@@ -1,0 +1,532 @@
+<Application x:Class="Nezabudka.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:Nezabudka.App.Converters"
+             StartupUri="MainWindow.xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/BlackTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibility" />
+            <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
+            <converters:InverseNullToVisibilityConverter x:Key="InverseNullToVisibility" />
+
+            <FontFamily x:Key="GothicFont">pack://application:,,,/Nezabudka;component/Assets/Fonts/#Cormorant SC</FontFamily>
+            <FontFamily x:Key="ChineseFont">pack://application:,,,/Nezabudka;component/Assets/Fonts/#Noto Sans SC</FontFamily>
+            <FontFamily x:Key="LatinFont">pack://application:,,,/Nezabudka;component/Assets/Fonts/#Cormorant SC, Segoe UI Symbol, pack://application:,,,/Nezabudka;component/Assets/Fonts/#Noto Sans SC</FontFamily>
+            <FontFamily x:Key="InterfaceFont">pack://application:,,,/Nezabudka;component/Assets/Fonts/#Cormorant SC, Segoe UI Symbol, pack://application:,,,/Nezabudka;component/Assets/Fonts/#Noto Sans SC</FontFamily>
+            <FontFamily x:Key="BodyFont">Segoe UI, pack://application:,,,/Nezabudka;component/Assets/Fonts/#Noto Sans SC</FontFamily>
+
+            <Style TargetType="Window">
+                <Setter Property="FontFamily" Value="{StaticResource GothicFont}" />
+                <Setter Property="FontSize" Value="16" />
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            </Style>
+
+            <Style x:Key="GlassCard" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="14" />
+            </Style>
+
+            <Style x:Key="InputTextBox" TargetType="TextBox">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="12,9" />
+                <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+                <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="TextBox">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10">
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Stretch" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="ContextMenu">
+                <Setter Property="FontFamily" Value="{DynamicResource InterfaceFont}" />
+                <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="5" />
+                <Setter Property="HasDropShadow" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContextMenu">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="12"
+                                    Padding="{TemplateBinding Padding}">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="22" ShadowDepth="5" Opacity="0.34" Color="#99000000" />
+                                </Border.Effect>
+                                <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="MenuItem">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="12,9" />
+                <Setter Property="Margin" Value="0,1" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="MenuItem">
+                            <Border x:Name="MenuItemBorder"
+                                    MinWidth="156"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="8"
+                                    Padding="{TemplateBinding Padding}"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="MenuItemScale" ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <ContentPresenter ContentSource="Header" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="MenuItemScale" Storyboard.TargetProperty="ScaleX" To="1.02" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="MenuItemScale" Storyboard.TargetProperty="ScaleY" To="1.02" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="MenuItemScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.14" />
+                                            <DoubleAnimation Storyboard.TargetName="MenuItemScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.14" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource HoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="MenuItemBorder" Property="Opacity" Value="0.45" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="PrimaryButton" TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource ButtonTextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="16,10" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
+                                    Padding="{TemplateBinding Padding}"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="PrimaryScale" ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleX" To="0.95" Duration="0:0:0.07" />
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleY" To="0.95" Duration="0:0:0.07" />
+                                            <DoubleAnimation Storyboard.TargetName="ButtonBorder" Storyboard.TargetProperty="Opacity" To="0.82" Duration="0:0:0.07" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonBorder" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.14" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="PrimaryScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.15" />
+                                            <DoubleAnimation Storyboard.TargetName="ButtonBorder" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.78" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.42" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="GhostButton" TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="11,8" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="9"
+                                    Padding="{TemplateBinding Padding}"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="GhostScale" ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleX" To="0.94" Duration="0:0:0.07" />
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleY" To="0.94" Duration="0:0:0.07" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.18">
+                                                <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.14" />
+                                            <DoubleAnimation Storyboard.TargetName="GhostScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.14" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource HoverBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.72" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="TitleBarButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                <Setter Property="Width" Value="42" />
+                <Setter Property="Height" Value="32" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+
+            <Style x:Key="TogglePill" TargetType="ToggleButton">
+                <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="ToggleBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="10"
+                                    Padding="{TemplateBinding Padding}"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="ToggleScale" ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.18" />
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.18" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleX" To="0.95" Duration="0:0:0.07" />
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleY" To="0.95" Duration="0:0:0.07" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleX" To="1.025" Duration="0:0:0.18" />
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleY" To="1.025" Duration="0:0:0.18" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.14" />
+                                            <DoubleAnimation Storyboard.TargetName="ToggleScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.14" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource HoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="ToggleBorder" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                    <Setter TargetName="ToggleBorder" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource ButtonTextBrush}" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ThemeRadio" TargetType="RadioButton">
+                <Setter Property="Width" Value="28" />
+                <Setter Property="Height" Value="28" />
+                <Setter Property="Margin" Value="3,0" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="ThemeRing"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="2"
+                                    CornerRadius="14"
+                                    Padding="4"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="ThemeScale" ScaleX="1" ScaleY="1" />
+                                </Border.RenderTransform>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ThemeScale" Storyboard.TargetProperty="ScaleX" To="0.82" Duration="0:0:0.07" />
+                                            <DoubleAnimation Storyboard.TargetName="ThemeScale" Storyboard.TargetProperty="ScaleY" To="0.82" Duration="0:0:0.07" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ThemeScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18" />
+                                            <DoubleAnimation Storyboard.TargetName="ThemeScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ThemeScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.18" />
+                                            <DoubleAnimation Storyboard.TargetName="ThemeScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.18" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ThemeRing" Property="Background" Value="{DynamicResource HoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="ThemeRing" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="LanguageRadio" TargetType="RadioButton">
+                <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Height" Value="34" />
+                <Setter Property="Margin" Value="2,0" />
+                <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Grid Background="Transparent">
+                                <Border x:Name="LanguageHighlight" CornerRadius="9"
+                                        Background="{DynamicResource AccentBrush}" Opacity="0" />
+                                <Border x:Name="LanguageFocus" CornerRadius="9" BorderThickness="1"
+                                        BorderBrush="{DynamicResource TextBrush}" Opacity="0" />
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource ButtonTextBrush}" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard><Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="LanguageHighlight" Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.18" />
+                                        </Storyboard></BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard><Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="LanguageHighlight" Storyboard.TargetProperty="Opacity"
+                                                             To="0" Duration="0:0:0.18" />
+                                        </Storyboard></BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="LanguageFocus" Property="Opacity" Value="0.4" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="LanguageFocus" Property="Opacity" Value="0.8" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter Property="Opacity" Value="0.75" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="CalculatorButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="FontSize" Value="18" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Margin" Value="4" />
+                <Setter Property="Padding" Value="10" />
+            </Style>
+
+            <Style TargetType="ComboBox">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Padding" Value="9,7" />
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                            <Setter Property="Padding" Value="10,7" />
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="DatePicker">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+
+            <Style TargetType="DatePickerTextBox">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Background" Value="{DynamicResource ElevatedBrush}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
