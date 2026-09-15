@@ -91,4 +91,32 @@ public sealed class SettingsTests
             }
         }
     }
+
+    [Fact]
+    public void StorageAndBehaviorPreferencesSurviveRestart()
+    {
+        var testDirectory = Path.Combine(Path.GetTempPath(), "Nezabudka.Tests", Guid.NewGuid().ToString("N"));
+        var settingsPath = Path.Combine(testDirectory, "settings.json");
+        var dataDirectory = Path.Combine(testDirectory, "PortableNotes");
+
+        try
+        {
+            var settings = new AppSettingsService(settingsPath);
+            settings.SaveDataDirectory(dataDirectory);
+            settings.SaveAutoSaveEnabled(false);
+            settings.SaveGlobalHotkeysEnabled(false);
+
+            var reloaded = new AppSettingsService(settingsPath);
+            Assert.Equal(Path.GetFullPath(dataDirectory), reloaded.LoadDataDirectory());
+            Assert.False(reloaded.LoadAutoSaveEnabled());
+            Assert.False(reloaded.LoadGlobalHotkeysEnabled());
+        }
+        finally
+        {
+            if (Directory.Exists(testDirectory))
+            {
+                Directory.Delete(testDirectory, true);
+            }
+        }
+    }
 }

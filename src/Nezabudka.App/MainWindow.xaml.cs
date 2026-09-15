@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -11,6 +12,7 @@ using System.Windows.Threading;
 using Nezabudka.App.Models;
 using Nezabudka.App.Services;
 using Nezabudka.App.ViewModels;
+using MessageBox = System.Windows.MessageBox;
 
 namespace Nezabudka.App;
 
@@ -20,7 +22,10 @@ public partial class MainWindow : Window
     private readonly System.Drawing.Icon? _appIcon;
     private readonly System.Windows.Forms.NotifyIcon? _trayIcon;
     private readonly LocalizationService _localization = LocalizationService.Instance;
+    private readonly GlobalHotkeyService? _globalHotkeys;
     private NoteItemViewModel? _pendingDeletion;
+    private int _lastEditorSelectionStart;
+    private int _lastEditorSelectionLength;
     private bool _allowClose;
     private bool _hasThemeSnapshot;
     private bool _trayHintShown;
@@ -45,6 +50,12 @@ public partial class MainWindow : Window
         {
             return;
         }
+
+        _globalHotkeys = new GlobalHotkeyService();
+        _globalHotkeys.ToggleWindowRequested += ToggleMainWindow;
+        _globalHotkeys.NewNoteRequested += CreateNoteFromGlobalHotkey;
+        _viewModel.GlobalHotkeysSettingChanged += GlobalHotkeysSettingChanged;
+        SourceInitialized += MainWindow_SourceInitialized;
 
         _appIcon = LoadAppIcon();
 
@@ -84,6 +95,54 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
             Activate();
         });
+    }
+
+    private void ToggleMainWindow()
+    {
+        if (IsVisible && IsActive)
+        {
+            Hide();
+            return;
+        }
+
+        ShowMainWindow();
+    }
+
+    private void CreateNoteFromGlobalHotkey()
+    {
+        ShowMainWindow();
+        _viewModel.CreateNote();
+        Dispatcher.BeginInvoke(() =>
+        {
+            TitleEditor.Focus();
+            TitleEditor.SelectAll();
+        });
+    }
+
+    private void MainWindow_SourceInitialized(object? sender, EventArgs e)
+    {
+        _globalHotkeys?.Attach(this);
+        ApplyGlobalHotkeySetting(_viewModel.IsGlobalHotkeysEnabled, showError: true);
+    }
+
+    private void GlobalHotkeysSettingChanged(bool enabled) => ApplyGlobalHotkeySetting(enabled, showError: true);
+
+    private void ApplyGlobalHotkeySetting(bool enabled, bool showError)
+    {
+        if (_globalHotkeys is null || _globalHotkeys.SetEnabled(enabled) || !enabled)
+        {
+            return;
+        }
+
+        _viewModel.IsGlobalHotkeysEnabled = false;
+        if (showError)
+        {
+            MessageBox.Show(
+                _localization.Get("GlobalHotkeysUnavailable"),
+                _localization.Get("GlobalHotkeysSetting"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
     }
 
     internal void RestoreFromSecondaryLaunch()
@@ -126,6 +185,12 @@ public partial class MainWindow : Window
     private void NewNote_Click(object sender, RoutedEventArgs e)
     {
         _viewModel.CreateNote();
+    }
+
+    private void ContentEditor_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        _lastEditorSelectionStart = ContentEditor.SelectionStart;
+        _lastEditorSelectionLength = ContentEditor.SelectionLength;
     }
 
     private void Localization_LanguageChanged(object? sender, EventArgs e)
@@ -348,8 +413,17 @@ public partial class MainWindow : Window
 
     private void InsertCalculation_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.InsertCalculationIntoNote();
+        var caret = _viewModel.InsertCalculationIntoNote(
+            _lastEditorSelectionStart,
+            _lastEditorSelectionLength);
+        Dispatcher.BeginInvoke(() =>
+        {
+            ContentEditor.Focus();
+            ContentEditor.Select(Math.Clamp(caret, 0, ContentEditor.Text.Length), 0);
+        });
     }
+
+    private void PinSelectedNote_Click(object sender, RoutedEventArgs e) => _viewModel.ToggleSelectedPin();
 
     private void ClearReminder_Click(object sender, RoutedEventArgs e)
     {
@@ -418,6 +492,15 @@ public partial class MainWindow : Window
         }
     }
 
+    private void TogglePinNoteMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.MenuItem { DataContext: NoteItemViewModel note })
+        {
+            _viewModel.SelectedNote = note;
+            _viewModel.ToggleSelectedPin();
+        }
+    }
+
     private void NoteItem_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (sender is ListBoxItem { DataContext: NoteItemViewModel note } item)
@@ -432,6 +515,8 @@ public partial class MainWindow : Window
     private System.Windows.Controls.ContextMenu CreateNoteContextMenu()
     {
         var menu = new System.Windows.Controls.ContextMenu();
+        var pinItem = new System.Windows.Controls.MenuItem { Tag = "PinCommand" };
+        pinItem.Click += TogglePinNoteMenuItem_Click;
         var editItem = CreateLocalizedMenuItem("Edit");
         editItem.Click += EditNoteMenuItem_Click;
 
@@ -439,6 +524,14 @@ public partial class MainWindow : Window
         deleteItem.SetResourceReference(ForegroundProperty, "DangerBrush");
         deleteItem.Click += DeleteNoteMenuItem_Click;
 
+        menu.Opened += (_, _) =>
+        {
+            if (menu.DataContext is NoteItemViewModel note)
+            {
+                pinItem.Header = _localization.Get(note.IsPinned ? "UnpinNote" : "PinNote");
+            }
+        };
+        menu.Items.Add(pinItem);
         menu.Items.Add(editItem);
         menu.Items.Add(new Separator { Margin = new Thickness(8, 3, 8, 3) });
         menu.Items.Add(deleteItem);
@@ -496,10 +589,153 @@ public partial class MainWindow : Window
         {
             _viewModel.SelectedNote = note;
             _viewModel.DeleteSelectedNote();
+            AnimateUndoPanelIn();
         }
 
         CloseDeleteConfirmation();
     }
+
+    private void UndoDelete_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.UndoLastDelete();
+        Dispatcher.BeginInvoke(AnimateEditorIn);
+    }
+
+    private void AnimateUndoPanelIn()
+    {
+        UndoDeletePanel.BeginAnimation(OpacityProperty, SmoothAnimation(0, 1, 220));
+        UndoDeleteTranslate.BeginAnimation(TranslateTransform.YProperty, SmoothAnimation(14, 0, 250));
+    }
+
+    private async void ExportNotes_Click(object sender, RoutedEventArgs e)
+    {
+        DataMenuButton.IsChecked = false;
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = _localization.Get("ExportNotes"),
+            Filter = _localization.Get("ArchiveFileFilter"),
+            DefaultExt = ".nezabudka",
+            AddExtension = true,
+            FileName = $"Nezabudka-{DateTime.Now:yyyy-MM-dd}.nezabudka"
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            await _viewModel.ExportAsync(dialog.FileName);
+            ShowInformation("ExportCompleted", "ExportNotes");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ShowOperationError(exception);
+        }
+    }
+
+    private async void ImportNotes_Click(object sender, RoutedEventArgs e)
+    {
+        DataMenuButton.IsChecked = false;
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = _localization.Get("ImportNotes"),
+            Filter = _localization.Get("ArchiveFileFilter"),
+            DefaultExt = ".nezabudka",
+            CheckFileExists = true
+        };
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        var choice = MessageBox.Show(
+            _localization.Get("ImportModePrompt"),
+            _localization.Get("ImportNotes"),
+            MessageBoxButton.YesNoCancel,
+            MessageBoxImage.Question);
+        if (choice == MessageBoxResult.Cancel)
+        {
+            return;
+        }
+
+        try
+        {
+            var count = await _viewModel.ImportAsync(
+                dialog.FileName,
+                choice == MessageBoxResult.Yes ? NoteImportMode.Merge : NoteImportMode.Replace);
+            MessageBox.Show(
+                _localization.Format("ImportCompleted", count),
+                _localization.Get("ImportNotes"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            ShowOperationError(exception);
+        }
+    }
+
+    private async void ChangeDataFolder_Click(object sender, RoutedEventArgs e)
+    {
+        DataMenuButton.IsChecked = false;
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = _localization.Get("ChooseDataFolder"),
+            UseDescriptionForTitle = true,
+            InitialDirectory = _viewModel.DataDirectory,
+            ShowNewFolderButton = true
+        };
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            await _viewModel.ChangeDataDirectoryAsync(dialog.SelectedPath);
+            ShowInformation("DataFolderChanged", "DataManagement");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ShowOperationError(exception);
+        }
+    }
+
+    private void RestoreTrashNote_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.Button { DataContext: NoteItemViewModel note })
+        {
+            _viewModel.RestoreFromTrash(note);
+            DataMenuButton.IsChecked = false;
+            Dispatcher.BeginInvoke(AnimateEditorIn);
+        }
+    }
+
+    private void EmptyTrash_Click(object sender, RoutedEventArgs e)
+    {
+        var choice = MessageBox.Show(
+            _localization.Get("EmptyTrashPrompt"),
+            _localization.Get("EmptyTrashTitle"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (choice == MessageBoxResult.Yes)
+        {
+            _viewModel.EmptyTrash();
+        }
+    }
+
+    private void ShowInformation(string messageKey, string titleKey) => MessageBox.Show(
+        _localization.Get(messageKey),
+        _localization.Get(titleKey),
+        MessageBoxButton.OK,
+        MessageBoxImage.Information);
+
+    private void ShowOperationError(Exception _) => MessageBox.Show(
+        _localization.Get("OperationFailed"),
+        _localization.Get("DataManagement"),
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
 
     private void CloseDeleteConfirmation()
     {
@@ -612,7 +848,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control))
+        if (System.Windows.Input.Keyboard.Modifiers != System.Windows.Input.ModifierKeys.Control)
         {
             return;
         }
@@ -632,6 +868,10 @@ public partial class MainWindow : Window
                 ToggleCalculatorAnimated();
                 e.Handled = true;
                 break;
+            case System.Windows.Input.Key.S:
+                _ = _viewModel.SaveAsync();
+                e.Handled = true;
+                break;
         }
     }
 
@@ -644,6 +884,7 @@ public partial class MainWindow : Window
             SearchBox.SelectAll();
         });
         AddKeyboardShortcut(System.Windows.Input.Key.K, ToggleCalculatorAnimated);
+        AddKeyboardShortcut(System.Windows.Input.Key.S, () => _ = _viewModel.SaveAsync());
     }
 
     private void AddKeyboardShortcut(System.Windows.Input.Key key, Action action)
@@ -680,8 +921,28 @@ public partial class MainWindow : Window
 
     private async Task ExitApplicationAsync()
     {
-        var flushOperation = Dispatcher.InvokeAsync(() => _viewModel.FlushAsync());
-        await await flushOperation;
+        if (_viewModel.HasUnsavedChanges && !_viewModel.IsAutoSaveEnabled)
+        {
+            var choice = MessageBox.Show(
+                _localization.Get("SaveBeforeExitPrompt"),
+                _localization.Get("UnsavedChangesTitle"),
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+            if (choice == MessageBoxResult.Cancel)
+            {
+                return;
+            }
+
+            if (choice == MessageBoxResult.Yes)
+            {
+                await _viewModel.SaveAsync();
+            }
+        }
+        else
+        {
+            await _viewModel.FlushAsync();
+        }
+
         _allowClose = true;
         if (_trayIcon is not null)
         {
@@ -694,6 +955,13 @@ public partial class MainWindow : Window
     {
         _localization.LanguageChanged -= Localization_LanguageChanged;
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _viewModel.GlobalHotkeysSettingChanged -= GlobalHotkeysSettingChanged;
+        if (_globalHotkeys is not null)
+        {
+            _globalHotkeys.ToggleWindowRequested -= ToggleMainWindow;
+            _globalHotkeys.NewNoteRequested -= CreateNoteFromGlobalHotkey;
+            _globalHotkeys.Dispose();
+        }
         _viewModel.Dispose();
         _trayIcon?.Dispose();
         _appIcon?.Dispose();

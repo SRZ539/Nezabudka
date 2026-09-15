@@ -18,6 +18,10 @@ public sealed class NoteData
 
     public NoteStatus Status { get; set; } = NoteStatus.Active;
 
+    public bool IsPinned { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool IsCompleted { get; set; }
 

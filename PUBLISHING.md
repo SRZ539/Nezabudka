@@ -1,4 +1,4 @@
-# Первая публикация Незабудки
+# Публикация Незабудки
 
 ## Что подготовлено
 
@@ -28,16 +28,16 @@
 3. В PowerShell из корня проекта выполните:
 
 ```powershell
-Compress-Archive -Path artifacts/nezabudka-win-x64/* -DestinationPath artifacts/Nezabudka-0.1.0-alpha-win-x64.zip
+Compress-Archive -Path artifacts/nezabudka-win-x64/* -DestinationPath artifacts/Nezabudka-0.2.0-alpha-win-x64.zip
 ```
 
 4. GitHub → репозиторий → Releases → Draft a new release / Create a new release.
-5. Создайте тег v0.1.0-alpha на опубликованной ветке. Заголовок: Незабудка 0.1.0 Alpha.
+5. Создайте тег `v0.2.0-alpha` на опубликованной ветке. Заголовок: `Незабудка 0.2.0 Alpha`.
 6. Прикрепите ZIP готовой программы и отметьте This is a pre-release, затем опубликуйте релиз.
 
 Пример описания релиза:
 
-Локальный блокнот для Windows x64. Заметки с автосохранением, поиск, напоминания в трее, три темы, русский/английский/китайский интерфейс и калькулятор. Распакуйте Nezabudka-0.1.0-alpha-win-x64.zip целиком и запустите Nezabudka.exe. Это ранняя версия; об ошибках сообщайте в Issues. Данные хранятся локально в %LOCALAPPDATA%\Nezabudka.
+Локальный блокнот для Windows x64. Закрепление заметок, переносимый архив, резервные копии, выбор папки данных, глобальные горячие клавиши, три языка и калькулятор со вставкой в позицию курсора. Распакуйте `Nezabudka-0.2.0-alpha-win-x64.zip` целиком и запустите `Nezabudka.exe`. Это ранняя версия; об ошибках сообщайте в Issues.
 
 Инструкция GitHub: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
 

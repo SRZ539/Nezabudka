@@ -157,6 +157,99 @@
                             </StackPanel>
                         </Button>
 
+                        <Grid Grid.Column="2"
+                              Margin="8,0,0,0"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <ToggleButton x:Name="DataMenuButton"
+                                          Width="40"
+                                          Height="40"
+                                          Content="⚙"
+                                          Style="{StaticResource TogglePill}"
+                                          ToolTip="{loc:Loc DataManagement}" />
+                            <Popup x:Name="DataMenuPopup"
+                                   IsOpen="{Binding IsChecked, ElementName=DataMenuButton, Mode=TwoWay}"
+                                   PlacementTarget="{Binding ElementName=DataMenuButton}"
+                                   Placement="Bottom"
+                                   VerticalOffset="8"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   PopupAnimation="Fade">
+                                <Border Width="360"
+                                        Padding="16"
+                                        Style="{StaticResource GlassCard}"
+                                        Background="{DynamicResource ElevatedBrush}">
+                                    <StackPanel>
+                                        <TextBlock Text="{loc:Loc DataManagement}" FontSize="18" FontWeight="SemiBold" />
+                                        <TextBlock Text="{loc:Loc DataFolder}" Margin="0,11,0,3" Foreground="{DynamicResource MutedBrush}" />
+                                        <TextBlock Text="{Binding DataDirectory}"
+                                                   FontFamily="{StaticResource BodyFont}"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"
+                                                   ToolTip="{Binding DataDirectory}" />
+                                        <UniformGrid Columns="2" Margin="0,13,0,10">
+                                            <Button Content="{loc:Loc ExportNotes}" Margin="0,0,4,0" Style="{StaticResource GhostButton}" Click="ExportNotes_Click" />
+                                            <Button Content="{loc:Loc ImportNotes}" Margin="4,0,0,0" Style="{StaticResource GhostButton}" Click="ImportNotes_Click" />
+                                        </UniformGrid>
+                                        <Button Content="{loc:Loc ChangeDataFolder}" Style="{StaticResource GhostButton}" Click="ChangeDataFolder_Click" />
+                                        <Separator Margin="0,10" />
+                                        <Expander Header="{Binding TrashHeader}" Margin="2,0,2,10">
+                                            <StackPanel Margin="0,8,0,0">
+                                                <TextBlock Text="{loc:Loc TrashEmpty}"
+                                                           Margin="4,5"
+                                                           Foreground="{DynamicResource MutedBrush}"
+                                                           Visibility="{Binding HasDeletedNotes, Converter={StaticResource InverseBooleanToVisibility}}" />
+                                                <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl ItemsSource="{Binding DeletedNotes}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate DataType="{x:Type viewModels:NoteItemViewModel}">
+                                                                <Grid Margin="3,3">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*" />
+                                                                        <ColumnDefinition Width="Auto" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock Text="{Binding DisplayTitle}"
+                                                                               VerticalAlignment="Center"
+                                                                               TextTrimming="CharacterEllipsis" />
+                                                                    <Button Grid.Column="1"
+                                                                            Content="{loc:Loc RestoreNote}"
+                                                                            Margin="7,0,0,0"
+                                                                            Padding="8,5"
+                                                                            Style="{StaticResource GhostButton}"
+                                                                            Click="RestoreTrashNote_Click" />
+                                                                </Grid>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                                <Button Content="{loc:Loc EmptyTrash}"
+                                                        Margin="0,7,0,0"
+                                                        Foreground="{DynamicResource DangerBrush}"
+                                                        Style="{StaticResource GhostButton}"
+                                                        IsEnabled="{Binding HasDeletedNotes}"
+                                                        Click="EmptyTrash_Click" />
+                                            </StackPanel>
+                                        </Expander>
+                                        <ToggleButton Content="{loc:Loc AutosaveSetting}"
+                                                      Margin="0,0,0,7"
+                                                      HorizontalContentAlignment="Left"
+                                                      Style="{StaticResource TogglePill}"
+                                                      IsChecked="{Binding IsAutoSaveEnabled, Mode=TwoWay}" />
+                                        <ToggleButton Content="{loc:Loc GlobalHotkeysSetting}"
+                                                      HorizontalContentAlignment="Left"
+                                                      Style="{StaticResource TogglePill}"
+                                                      IsChecked="{Binding IsGlobalHotkeysEnabled, Mode=TwoWay}" />
+                                        <TextBlock Text="{loc:Loc GlobalHotkeysHint}"
+                                                   Margin="4,7,0,0"
+                                                   FontSize="11"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource MutedBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </Grid>
+
                         <Button x:Name="NewNoteButton" Grid.Column="4"
                                 Height="40"
                                 Margin="0,0,12,0"
@@ -282,13 +375,6 @@
                                                                     <TranslateTransform x:Name="ItemTranslate" />
                                                                 </TransformGroup>
                                                             </Border.RenderTransform>
-                                                            <Border.Effect>
-                                                                <DropShadowEffect x:Name="ItemShadow"
-                                                                                  BlurRadius="0"
-                                                                                  ShadowDepth="0"
-                                                                                  Opacity="0"
-                                                                                  Color="#99000000" />
-                                                            </Border.Effect>
                                                             <ContentPresenter />
                                                         </Border>
                                                         <ControlTemplate.Triggers>
@@ -315,10 +401,9 @@
                                                             <EventTrigger RoutedEvent="MouseEnter">
                                                                 <BeginStoryboard>
                                                                     <Storyboard>
-                                                                        <DoubleAnimation Storyboard.TargetName="ItemShadow" Storyboard.TargetProperty="BlurRadius" To="13" Duration="0:0:0.24">
+                                                                        <DoubleAnimation Storyboard.TargetName="ItemTranslate" Storyboard.TargetProperty="X" To="4" Duration="0:0:0.22">
                                                                             <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
                                                                         </DoubleAnimation>
-                                                                        <DoubleAnimation Storyboard.TargetName="ItemShadow" Storyboard.TargetProperty="Opacity" To="0.24" Duration="0:0:0.24" />
                                                                     </Storyboard>
                                                                 </BeginStoryboard>
                                                             </EventTrigger>
@@ -343,8 +428,9 @@
                                                                     <Storyboard>
                                                                         <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.22" />
                                                                         <DoubleAnimation Storyboard.TargetName="ItemScale" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.22" />
-                                                                        <DoubleAnimation Storyboard.TargetName="ItemShadow" Storyboard.TargetProperty="BlurRadius" To="0" Duration="0:0:0.2" />
-                                                                        <DoubleAnimation Storyboard.TargetName="ItemShadow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.18" />
+                                                                        <DoubleAnimation Storyboard.TargetName="ItemTranslate" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.2">
+                                                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                                                        </DoubleAnimation>
                                                                     </Storyboard>
                                                                 </BeginStoryboard>
                                                             </EventTrigger>
@@ -364,21 +450,34 @@
                                     <ListBox.ItemTemplate>
                                         <DataTemplate DataType="{x:Type viewModels:NoteItemViewModel}">
                                             <StackPanel>
-                                                <TextBlock Text="{Binding DisplayTitle}"
-                                                           FontWeight="SemiBold"
-                                                           FontSize="15"
-                                                           TextTrimming="CharacterEllipsis">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsTerminal}" Value="True">
-                                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                                    <Setter Property="Opacity" Value="0.62" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding DisplayTitle}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="15"
+                                                               TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsTerminal}" Value="True">
+                                                                        <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                        <Setter Property="Opacity" Value="0.62" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="◆"
+                                                               Margin="8,0,0,0"
+                                                               FontFamily="Segoe UI Symbol"
+                                                               Foreground="{DynamicResource AccentBrush}"
+                                                               ToolTip="{loc:Loc Pinned}"
+                                                               Visibility="{Binding IsPinned, Converter={StaticResource BooleanToVisibility}}" />
+                                                </Grid>
                                                 <TextBlock Text="{Binding Preview}"
                                                            Margin="0,5,0,7"
                                                            Foreground="{DynamicResource MutedBrush}"
@@ -486,6 +585,15 @@
                                     </Grid>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="14,0,0,0" VerticalAlignment="Center">
+                                        <Button Content="◆"
+                                                Width="38"
+                                                Height="38"
+                                                Margin="0,0,8,0"
+                                                Padding="0"
+                                                FontFamily="Segoe UI Symbol"
+                                                Style="{StaticResource GhostButton}"
+                                                Click="PinSelectedNote_Click"
+                                                ToolTip="{Binding SelectedNote.PinActionDisplay}" />
                                         <Grid Margin="0,0,8,0">
                                             <ToggleButton x:Name="StatusPickerButton"
                                                           Style="{StaticResource TogglePill}"
@@ -530,6 +638,7 @@
                                     Background="{DynamicResource EditorBrush}">
                                 <TextBox x:Name="ContentEditor"
                                          Text="{Binding SelectedNote.Content, UpdateSourceTrigger=PropertyChanged}"
+                                         SelectionChanged="ContentEditor_SelectionChanged"
                                          FontFamily="{StaticResource BodyFont}"
                                          AcceptsReturn="True"
                                          AcceptsTab="True"
@@ -829,7 +938,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{loc:Loc AutosaveEnabled}" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBlock Text="{Binding AutoSaveDisplay}" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource MutedBrush}" />
                         <TextBlock Grid.Column="1" Margin="12,0" Text="{loc:Loc FooterCredit}"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
@@ -837,6 +946,25 @@
                                    Foreground="{DynamicResource MutedBrush}" />
                         <TextBlock Grid.Column="2" Text="{loc:Loc TrayHint}" TextTrimming="CharacterEllipsis" ToolTip="{loc:Loc TrayHint}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource MutedBrush}" />
                     </Grid>
+                </Border>
+
+                <Border x:Name="UndoDeletePanel"
+                        Grid.RowSpan="3"
+                        Panel.ZIndex="80"
+                        Margin="0,0,0,48"
+                        Padding="14,9"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Style="{StaticResource GlassCard}"
+                        Background="{DynamicResource ElevatedBrush}"
+                        Visibility="{Binding CanUndoDelete, Converter={StaticResource BooleanToVisibility}}">
+                    <Border.RenderTransform>
+                        <TranslateTransform x:Name="UndoDeleteTranslate" />
+                    </Border.RenderTransform>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{loc:Loc NoteMovedToTrash}" Margin="0,0,14,0" VerticalAlignment="Center" />
+                        <Button Content="{loc:Loc UndoDelete}" Style="{StaticResource PrimaryButton}" Click="UndoDelete_Click" />
+                    </StackPanel>
                 </Border>
 
                 <Border x:Name="DeleteConfirmation" Grid.RowSpan="3" Panel.ZIndex="90"

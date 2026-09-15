@@ -7,6 +7,7 @@ namespace Nezabudka.App.Services;
 public sealed class AppSettingsService
 {
     private readonly string _settingsPath;
+    private readonly object _sync = new();
 
     public AppSettingsService(string? settingsPath = null)
     {
@@ -46,7 +47,66 @@ public sealed class AppSettingsService
         SaveSettings(settings);
     }
 
+    public string LoadDataDirectory()
+    {
+        var configured = LoadSettings().DataDirectory;
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return NoteStorageService.DefaultDataDirectory;
+        }
+
+        try
+        {
+            return Path.GetFullPath(configured);
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return NoteStorageService.DefaultDataDirectory;
+        }
+    }
+
+    public void SaveDataDirectory(string? directory)
+    {
+        var settings = LoadSettings();
+        var normalized = string.IsNullOrWhiteSpace(directory)
+            ? null
+            : Path.GetFullPath(directory);
+        settings.DataDirectory = string.Equals(
+            normalized,
+            NoteStorageService.DefaultDataDirectory,
+            StringComparison.OrdinalIgnoreCase)
+                ? null
+                : normalized;
+        SaveSettings(settings);
+    }
+
+    public bool LoadAutoSaveEnabled() => LoadSettings().AutoSaveEnabled;
+
+    public void SaveAutoSaveEnabled(bool value)
+    {
+        var settings = LoadSettings();
+        settings.AutoSaveEnabled = value;
+        SaveSettings(settings);
+    }
+
+    public bool LoadGlobalHotkeysEnabled() => LoadSettings().GlobalHotkeysEnabled;
+
+    public void SaveGlobalHotkeysEnabled(bool value)
+    {
+        var settings = LoadSettings();
+        settings.GlobalHotkeysEnabled = value;
+        SaveSettings(settings);
+    }
+
     private AppSettingsData LoadSettings()
+    {
+        lock (_sync)
+        {
+            return LoadSettingsCore();
+        }
+    }
+
+    private AppSettingsData LoadSettingsCore()
     {
         try
         {
@@ -73,30 +133,28 @@ public sealed class AppSettingsService
 
     private void SaveSettings(AppSettingsData settings)
     {
-        try
+        lock (_sync)
         {
-            var directory = Path.GetDirectoryName(_settingsPath);
-            if (!string.IsNullOrEmpty(directory))
+            try
             {
-                Directory.CreateDirectory(directory);
+                var directory = Path.GetDirectoryName(_settingsPath);
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var temporaryPath = _settingsPath + ".tmp";
+                File.WriteAllText(temporaryPath, JsonSerializer.Serialize(settings));
+                File.Move(temporaryPath, _settingsPath, true);
             }
-
-            File.WriteAllText(_settingsPath, JsonSerializer.Serialize(settings));
+            catch (IOException)
+            {
+                // A UI preference should never prevent the notebook from working.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // A UI preference should never prevent the notebook from working.
+            }
         }
-        catch (IOException)
-        {
-            // A UI preference should never prevent the notebook from working.
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // A UI preference should never prevent the notebook from working.
-        }
-    }
-
-    private sealed class AppSettingsData
-    {
-        public string Theme { get; set; } = AppTheme.Black.ToString();
-
-        public string Language { get; set; } = AppLanguage.Russian.ToString();
     }
 }

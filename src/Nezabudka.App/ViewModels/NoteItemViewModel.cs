@@ -93,6 +93,29 @@ public sealed class NoteItemViewModel : INotifyPropertyChanged
 
     public bool IsClosed => Status == NoteStatus.Closed;
 
+    public bool IsPinned
+    {
+        get => _data.IsPinned;
+        set
+        {
+            if (_data.IsPinned == value)
+            {
+                return;
+            }
+
+            _data.IsPinned = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PinActionDisplay));
+            Touch();
+        }
+    }
+
+    public DateTime? DeletedAt => _data.DeletedAt;
+
+    public bool IsDeleted => DeletedAt.HasValue;
+
+    public string PinActionDisplay => LocalizationService.Instance.Get(IsPinned ? "UnpinNote" : "PinNote");
+
     public bool IsTerminal => Status is NoteStatus.Completed or NoteStatus.Closed;
 
     public string StatusDisplay => LocalizationService.Instance.Get(Status switch
@@ -252,6 +275,7 @@ public sealed class NoteItemViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(ListMeta));
         OnPropertyChanged(nameof(ReminderTimeDisplay));
         OnPropertyChanged(nameof(ReminderDateDisplay));
+        OnPropertyChanged(nameof(PinActionDisplay));
     }
 
     public void AdjustReminderTime(string part, int delta)
@@ -287,6 +311,41 @@ public sealed class NoteItemViewModel : INotifyPropertyChanged
         Changed?.Invoke(this);
     }
 
+    public int InsertText(string text, int selectionStart, int selectionLength)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var start = Math.Clamp(selectionStart, 0, Content.Length);
+        var length = Math.Clamp(selectionLength, 0, Content.Length - start);
+        Content = string.Concat(Content.AsSpan(0, start), text, Content.AsSpan(start + length));
+        return start + text.Length;
+    }
+
+    public void MoveToTrash(DateTime? deletedAt = null)
+    {
+        if (IsDeleted)
+        {
+            return;
+        }
+
+        _data.DeletedAt = deletedAt ?? DateTime.Now;
+        OnPropertyChanged(nameof(DeletedAt));
+        OnPropertyChanged(nameof(IsDeleted));
+        Touch();
+    }
+
+    public void RestoreFromTrash()
+    {
+        if (!IsDeleted)
+        {
+            return;
+        }
+
+        _data.DeletedAt = null;
+        OnPropertyChanged(nameof(DeletedAt));
+        OnPropertyChanged(nameof(IsDeleted));
+        Touch();
+    }
+
     public NoteData CreateSnapshot() => new()
     {
         Id = _data.Id,
@@ -296,6 +355,8 @@ public sealed class NoteItemViewModel : INotifyPropertyChanged
         UpdatedAt = _data.UpdatedAt,
         ReminderAt = _data.ReminderAt,
         Status = _data.Status,
+        IsPinned = _data.IsPinned,
+        DeletedAt = _data.DeletedAt,
         IsCompleted = false,
         ReminderShown = _data.ReminderShown
     };

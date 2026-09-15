@@ -7,6 +7,10 @@ namespace Nezabudka.App.Services;
 
 public sealed class NoteStorageService
 {
+    public static string DefaultDataDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Nezabudka");
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -18,10 +22,7 @@ public sealed class NoteStorageService
 
     public NoteStorageService(string? storagePath = null)
     {
-        StoragePath = storagePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Nezabudka",
-            "notes.json");
+        StoragePath = storagePath ?? Path.Combine(DefaultDataDirectory, "notes.json");
     }
 
     public string StoragePath { get; }
@@ -70,6 +71,40 @@ public sealed class NoteStorageService
             var json = JsonSerializer.Serialize(notes, JsonOptions);
             await File.WriteAllTextAsync(temporaryPath, json);
             File.Move(temporaryPath, StoragePath, true);
+        }
+        finally
+        {
+            _saveLock.Release();
+        }
+    }
+
+    public async Task<string?> CreateBackupAsync(int maximumBackups = 10)
+    {
+        await _saveLock.WaitAsync();
+        try
+        {
+            if (!File.Exists(StoragePath))
+            {
+                return null;
+            }
+
+            var storageDirectory = Path.GetDirectoryName(StoragePath)!;
+            var backupDirectory = Path.Combine(storageDirectory, "Backups");
+            Directory.CreateDirectory(backupDirectory);
+            var backupPath = Path.Combine(
+                backupDirectory,
+                $"notes-{DateTime.Now:yyyyMMdd-HHmmss-fff}-{Guid.NewGuid():N}.json");
+            File.Copy(StoragePath, backupPath, false);
+
+            foreach (var oldBackup in new DirectoryInfo(backupDirectory)
+                         .EnumerateFiles("notes-*.json")
+                         .OrderByDescending(file => file.CreationTimeUtc)
+                         .Skip(Math.Max(1, maximumBackups)))
+            {
+                oldBackup.Delete();
+            }
+
+            return backupPath;
         }
         finally
         {

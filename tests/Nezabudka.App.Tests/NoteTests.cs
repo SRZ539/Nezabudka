@@ -21,6 +21,7 @@ public sealed class NoteTests
                 Content = "До встречи в понедельник",
                 ReminderAt = new DateTime(2030, 5, 20, 15, 0, 0),
                 Status = NoteStatus.Waiting,
+                IsPinned = true,
                 IsCompleted = false
             };
 
@@ -32,6 +33,7 @@ public sealed class NoteTests
             Assert.Equal("Проверить отчёт", restored.Title);
             Assert.Equal(note.ReminderAt, restored.ReminderAt);
             Assert.Equal(NoteStatus.Waiting, restored.Status);
+            Assert.True(restored.IsPinned);
             Assert.False(restored.IsCompleted);
         }
         finally
@@ -41,6 +43,42 @@ public sealed class NoteTests
                 Directory.Delete(testDirectory, true);
             }
         }
+    }
+
+    [Theory]
+    [InlineData("1234", "9", 2, 0, "12934", 3)]
+    [InlineData("1234", "99", 1, 2, "1994", 3)]
+    [InlineData("", "42", 10, 4, "42", 2)]
+    public void TextIsInsertedAtTheCaretOrReplacesSelection(
+        string original,
+        string inserted,
+        int selectionStart,
+        int selectionLength,
+        string expected,
+        int expectedCaret)
+    {
+        var note = new NoteItemViewModel(new NoteData { Content = original });
+
+        var caret = note.InsertText(inserted, selectionStart, selectionLength);
+
+        Assert.Equal(expected, note.Content);
+        Assert.Equal(expectedCaret, caret);
+    }
+
+    [Fact]
+    public void PinAndTrashStateSurviveSnapshot()
+    {
+        var note = new NoteItemViewModel(new NoteData { Title = "Important" });
+
+        note.IsPinned = true;
+        note.MoveToTrash(new DateTime(2030, 1, 2, 3, 4, 5));
+        var snapshot = note.CreateSnapshot();
+
+        Assert.True(snapshot.IsPinned);
+        Assert.Equal(new DateTime(2030, 1, 2, 3, 4, 5), snapshot.DeletedAt);
+
+        note.RestoreFromTrash();
+        Assert.False(note.IsDeleted);
     }
 
     [Fact]
